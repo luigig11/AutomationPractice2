@@ -1,16 +1,14 @@
-namespace NunitSeleniumTemplate
-{
-    public class Tests
-    {
-        [SetUp]
-        public void Setup()
-        {
-        }
+using AutomationPractice2;
 
-        [Test]
-        public void Test1()
-        {
-            Assert.Pass();
-        }
+namespace NunitSeleniumTemplate;
+
+public class Tests : BaseTestClass
+{
+    
+
+    [Test]
+    public void Test1()
+    {
+        driver.Navigate().GoToUrl("https://www.google.com");
     }
 }
