@@ -9,16 +9,19 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System.Diagnostics;
 using AutomationPractice2.PageObjects.Models;
+using AutomationPractice2.TestUtilities;
 
 namespace AutomationPractice2.PageObjects;
 
 public class ZipCodePage
 {
     private IWebDriver driver;
+    private GoogleMapPage googleMapPage;
 
     public ZipCodePage(IWebDriver driver)
     {
         this.driver = driver;
+        googleMapPage = new GoogleMapPage(driver);
     }
 
     #region Selectors
@@ -32,6 +35,8 @@ public class ZipCodePage
     public IWebElement areaCodeInput => driver.FindElement(By.XPath("(//input[@aria-label='Area Code'])[2]"));
     public IWebElement searchButton => driver.FindElement(RelativeBy.WithLocator(By.TagName("input")).Below(areaCodeInput));
     public IWebElement zipTable => driver.FindElement(By.Id("tblZIP"));
+    public IWebElement infoDiv => driver.FindElement(By.Id("info"));
+    public IWebElement zipCodeTableInfo => infoDiv.FindElement(By.TagName("table"));
 
     #endregion
 
@@ -65,20 +70,39 @@ public class ZipCodePage
     public void SaveInfo(int numberOfRows)
     {
         List<IWebElement> rows = GetNthElementsFromZipTable(numberOfRows);
+        WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
         foreach (var row in rows)
         {
             ZipCodeSearchResults zipCodeSearchResults = new ZipCodeSearchResults();
-            zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[1].Text;
+            zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[1].Text; //esta fila corresponde a la primea fila, la de los encabezados. por eso da error
             zipCodeSearchResults.City = row.FindElements(By.TagName("td"))[2].Text;
             zipCodeSearchResults.State = row.FindElements(By.TagName("td"))[3].Text;
             row.FindElements(By.TagName("td"))[1].Click();
-            //get latitude and longitude
+            wait.Until(x => infoDiv.Displayed == true);
+            (string latitude, string longitude) coordinates = GetCoordinates();
+            googleMapPage.GoToGoogleMapPage();
+            wait.Until(x => googleMapPage.sceneDiv.Displayed == true);
+            googleMapPage.SearchLocation($"{coordinates.latitude}, {coordinates.longitude}");
+            wait.Until(x => googleMapPage.coodrinatesHeader.Displayed == true);
+            Utilities.TakeFullScreenShot(driver, $"{zipCodeSearchResults.City}-{zipCodeSearchResults.State}-{zipCodeSearchResults.ZipCode}.jpg");
+            //return to the previous zipcode results page page
         }
     }
 
     private List<IWebElement> GetNthElementsFromZipTable(int n)
     {
         List<IWebElement> rows = zipTable.FindElements(By.TagName("tr")).ToList();
+        //have ajuste para tomar solo las filas del body de la tabla
         return rows.Take(n).ToList();
     }
+
+    public (string, string) GetCoordinates()
+    {
+        IWebElement coordinates = zipCodeTableInfo.FindElements(By.TagName("tr"))[8];
+        var latitude = coordinates.FindElements(By.TagName("td"))[0].Text;
+        var longitud = coordinates.FindElements(By.TagName("td"))[1].Text;
+        return (latitude, longitud);
+    }
+
+
 }

@@ -24,5 +24,8 @@ public class Tests : BaseTestClass
         AdvanceSearchForm searchForm = new AdvanceSearchForm(town_city: search);
         wait.Until(x => zipCodePage.zipCodeInput.Displayed == true);
         zipCodePage.SearchZipCodeByTown(search);
+        wait.Until(x => zipCodePage.zipTable.Displayed == true);
+        zipCodePage.SaveInfo(10);
+        //wait
     }
 }
