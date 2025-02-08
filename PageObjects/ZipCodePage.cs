@@ -10,6 +10,7 @@ using OpenQA.Selenium.Support.UI;
 using System.Diagnostics;
 using AutomationPractice2.PageObjects.Models;
 using AutomationPractice2.TestUtilities;
+using System.Collections.ObjectModel;
 
 namespace AutomationPractice2.PageObjects;
 
@@ -22,7 +23,6 @@ public class ZipCodePage
     public ZipCodePage(IWebDriver driver)
     {
         this.driver = driver;
-        googleMapPage = new GoogleMapPage(driver);
         Func = IsElementDisplayed;
     }
 
@@ -81,21 +81,24 @@ public class ZipCodePage
                 zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[0].Text; //esta fila corresponde a la primea fila, la de los encabezados. por eso da error
                 zipCodeSearchResults.City = row.FindElements(By.TagName("td"))[1].Text;
                 zipCodeSearchResults.State = row.FindElements(By.TagName("td"))[2].Text;
-                row.FindElements(By.TagName("td"))[0].FindElement(By.TagName("a")).Click();
-                //wait.Until(x => infoDiv.Displayed == true);
-                wait.Until(Func);
-                if (driver.FindElement(By.XPath("//h1[contains(., 'Error on Zip-Codes.com')]")).Displayed)
+                zipCodeSearchResults.ZipCodeUrl = row.FindElements(By.TagName("td"))[0].FindElement(By.TagName("a")).GetAttribute("href");
+                string coordinates = GetCoordinates(driver, zipCodeSearchResults.ZipCodeUrl);
+                if (string.IsNullOrEmpty(coordinates))
                 {
-                    //hay que hacer que el driver vuelva a la pagina de resultados de busqueda de zipcodes. O hacer que se abra otra ventana cuando se de click al zip code
                     continue;
                 }
-                (string latitude, string longitude) coordinates = GetCoordinates();
+
+                var newWindow = driver.SwitchTo().NewWindow(WindowType.Tab);
+                ReadOnlyCollection<string> windowHandles = driver.WindowHandles;
+                string mainTab = windowHandles.First();
+                googleMapPage = new GoogleMapPage(newWindow);
                 googleMapPage.GoToGoogleMapPage();
-                //wait.Until(x => googleMapPage.sceneDiv.Displayed == true);
-                googleMapPage.SearchLocation($"{coordinates.latitude}, {coordinates.longitude}");
+                wait.Until(x => googleMapPage.sceneDiv.Displayed == true);
+                googleMapPage.SearchLocation(coordinates);
                 wait.Until(x => googleMapPage.coodrinatesHeader.Displayed == true);
                 Utilities.TakeFullScreenShot(driver, $"{zipCodeSearchResults.City}-{zipCodeSearchResults.State}-{zipCodeSearchResults.ZipCode}.jpg");
-                //return to the previous zipcode results page page
+                newWindow.Close();
+                driver.SwitchTo().Window(mainTab);
             }
             catch (Exception)
             {
@@ -105,12 +108,26 @@ public class ZipCodePage
         }
     }
 
-    public (string, string) GetCoordinates()
+    private string GetCoordinates(IWebDriver driver, string url)
     {
-        IWebElement coordinates = zipCodeTableInfo.FindElements(By.TagName("tr"))[8];
-        var latitude = coordinates.FindElements(By.TagName("td"))[0].Text;
-        var longitud = coordinates.FindElements(By.TagName("td"))[1].Text;
-        return (latitude, longitud);
+        var newWindow = driver.SwitchTo().NewWindow(WindowType.Tab);
+        ReadOnlyCollection<string> windowHandles = driver.WindowHandles;
+        string firstTab = windowHandles.First();
+        //string lastTab = windowHandles.Last();
+        WebDriverWait wait = new WebDriverWait(newWindow, TimeSpan.FromSeconds(10));
+        newWindow.Navigate().GoToUrl(url);
+        wait.Until(Func);
+        if (newWindow.FindElements(By.XPath("//h1[contains(., 'Error on Zip-Codes.com')]")).Count > 0)
+        {
+            newWindow.Close();
+            driver.SwitchTo().Window(firstTab);
+            return "";
+        }
+        IWebElement coordinatesRow = zipCodeTableInfo.FindElements(By.TagName("tr"))[8];
+        string coordinates = coordinatesRow.FindElements(By.TagName("td"))[1].Text;
+        newWindow.Close();
+        driver.SwitchTo().Window(firstTab);
+        return coordinates;
     }
 
     private List<IWebElement> GetNthElementsFromZipTable(int n)

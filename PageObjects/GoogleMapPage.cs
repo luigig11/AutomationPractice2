@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
+using System.Collections.ObjectModel;
 
 namespace AutomationPractice2.PageObjects;
 
@@ -27,7 +28,6 @@ public class GoogleMapPage
 
     public void SearchLocation(string location)
     {
-        WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
         searchInput.SendKeys(location);
         searchButton.Click();
     }

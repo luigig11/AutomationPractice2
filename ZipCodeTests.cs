@@ -6,7 +6,7 @@ using OpenQA.Selenium.Support.UI;
 namespace NunitSeleniumTemplate;
 
 [TestFixture]
-public class Tests : BaseTestClass
+public class ZipCodeTests : BaseTestClass
 {
     private ZipCodePage zipCodePage;
 
@@ -17,11 +17,11 @@ public class Tests : BaseTestClass
     }
 
     [Test]
-    public void Test1([Values("mar")] string search)
+    public void TakeGoogleMapscreenshots([Values("mar")] string search)
     {
         WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
         zipCodePage.GoToAdvanceSearchPage();
-        AdvanceSearchForm searchForm = new AdvanceSearchForm(town_city: search);
+        //AdvanceSearchForm searchForm = new AdvanceSearchForm(town_city: search);
         wait.Until(x => zipCodePage.zipCodeInput.Displayed == true);
         zipCodePage.SearchZipCodeByTown(search);
         wait.Until(x => zipCodePage.zipTable.Displayed == true);
