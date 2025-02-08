@@ -17,11 +17,13 @@ public class ZipCodePage
 {
     private IWebDriver driver;
     private GoogleMapPage googleMapPage;
+    private Func<IWebDriver, bool> Func;
 
     public ZipCodePage(IWebDriver driver)
     {
         this.driver = driver;
         googleMapPage = new GoogleMapPage(driver);
+        Func = IsElementDisplayed;
     }
 
     #region Selectors
@@ -29,7 +31,7 @@ public class ZipCodePage
     string AdvanceSearchURL = "https://www.zip-codes.com/search.asp?selectTab=3";
     List<ZipCodeSearchResults> zipCodeSearchResults = new List<ZipCodeSearchResults>();
     public IWebElement zipCodeInput => driver.FindElement(By.XPath("//input[@aria-label='fld_zip']"));
-    public IWebElement town_CityInput => driver.FindElement(By.XPath("//input[@aria-label='City']"));
+    public IWebElement town_CityInput => driver.FindElement(By.XPath("//input[@aria-label='City'][@class='form-control'][@placeholder='City']"));
     public IWebElement stateSelect => driver.FindElement(By.XPath("(//select[@aria-label='State'])[2]"));
     public IWebElement countyInput => driver.FindElement(By.XPath("(//input[@aria-label='County'])[2]"));
     public IWebElement areaCodeInput => driver.FindElement(By.XPath("(//input[@aria-label='Area Code'])[2]"));
@@ -73,27 +75,34 @@ public class ZipCodePage
         WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
         foreach (var row in rows)
         {
-            ZipCodeSearchResults zipCodeSearchResults = new ZipCodeSearchResults();
-            zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[1].Text; //esta fila corresponde a la primea fila, la de los encabezados. por eso da error
-            zipCodeSearchResults.City = row.FindElements(By.TagName("td"))[2].Text;
-            zipCodeSearchResults.State = row.FindElements(By.TagName("td"))[3].Text;
-            row.FindElements(By.TagName("td"))[1].Click();
-            wait.Until(x => infoDiv.Displayed == true);
-            (string latitude, string longitude) coordinates = GetCoordinates();
-            googleMapPage.GoToGoogleMapPage();
-            wait.Until(x => googleMapPage.sceneDiv.Displayed == true);
-            googleMapPage.SearchLocation($"{coordinates.latitude}, {coordinates.longitude}");
-            wait.Until(x => googleMapPage.coodrinatesHeader.Displayed == true);
-            Utilities.TakeFullScreenShot(driver, $"{zipCodeSearchResults.City}-{zipCodeSearchResults.State}-{zipCodeSearchResults.ZipCode}.jpg");
-            //return to the previous zipcode results page page
-        }
-    }
+            try
+            {
+                ZipCodeSearchResults zipCodeSearchResults = new ZipCodeSearchResults();
+                zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[0].Text; //esta fila corresponde a la primea fila, la de los encabezados. por eso da error
+                zipCodeSearchResults.City = row.FindElements(By.TagName("td"))[1].Text;
+                zipCodeSearchResults.State = row.FindElements(By.TagName("td"))[2].Text;
+                row.FindElements(By.TagName("td"))[0].FindElement(By.TagName("a")).Click();
+                //wait.Until(x => infoDiv.Displayed == true);
+                wait.Until(Func);
+                if (driver.FindElement(By.XPath("//h1[contains(., 'Error on Zip-Codes.com')]")).Displayed)
+                {
+                    //hay que hacer que el driver vuelva a la pagina de resultados de busqueda de zipcodes. O hacer que se abra otra ventana cuando se de click al zip code
+                    continue;
+                }
+                (string latitude, string longitude) coordinates = GetCoordinates();
+                googleMapPage.GoToGoogleMapPage();
+                //wait.Until(x => googleMapPage.sceneDiv.Displayed == true);
+                googleMapPage.SearchLocation($"{coordinates.latitude}, {coordinates.longitude}");
+                wait.Until(x => googleMapPage.coodrinatesHeader.Displayed == true);
+                Utilities.TakeFullScreenShot(driver, $"{zipCodeSearchResults.City}-{zipCodeSearchResults.State}-{zipCodeSearchResults.ZipCode}.jpg");
+                //return to the previous zipcode results page page
+            }
+            catch (Exception)
+            {
+                throw;
+            }
 
-    private List<IWebElement> GetNthElementsFromZipTable(int n)
-    {
-        List<IWebElement> rows = zipTable.FindElements(By.TagName("tr")).ToList();
-        //have ajuste para tomar solo las filas del body de la tabla
-        return rows.Take(n).ToList();
+        }
     }
 
     public (string, string) GetCoordinates()
@@ -102,6 +111,31 @@ public class ZipCodePage
         var latitude = coordinates.FindElements(By.TagName("td"))[0].Text;
         var longitud = coordinates.FindElements(By.TagName("td"))[1].Text;
         return (latitude, longitud);
+    }
+
+    private List<IWebElement> GetNthElementsFromZipTable(int n)
+    {
+        List<IWebElement> rows = zipTable.FindElements(By.TagName("tr")).ToList();
+        //have ajuste para tomar solo las filas del body de la tabla
+        return rows.Skip(1).Take(n).ToList();
+    }
+
+    
+    private bool IsElementDisplayed(IWebDriver driver)
+    {
+        try
+        {
+            driver.FindElement(By.Id("info")).Displayed.Equals(true);
+            return true;
+        }
+        catch (NoSuchElementException)
+        {
+            if (driver.FindElement(By.XPath("//h1[contains(., 'Error on Zip-Codes.com')]")).Displayed)
+            {
+                return true;
+            }
+            throw;
+        }
     }
 
 
