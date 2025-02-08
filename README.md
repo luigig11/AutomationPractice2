@@ -30,13 +30,16 @@ AutomationPractice2 is a Selenium-based automation project designed to perform v
    git clone https://github.com/yourusername/AutomationPractice2.git
 
 2. Navigate to the project directory:
-   ```cd AutomationPractice2
+   ```sh
+   cd AutomationPractice2
 
 3. Restore the dependencies:
-   ```dotnet restore
+   ```sh
+   dotnet restore
 
 4. Running Tests
-   ```dotnet test
+   ```sh
+   dotnet test
 
 ## Status
    This project is still in progress.
