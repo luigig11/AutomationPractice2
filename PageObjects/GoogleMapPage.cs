@@ -21,14 +21,21 @@ public class GoogleMapPage
     public IWebElement coodrinatesHeader => driver.FindElement(By.ClassName("lMbq3e"));
     #endregion
 
-    public void GoToGoogleMapPage()
+    public void GoToGoogleMapPage(string url)
     {
-        driver.Navigate().GoToUrl(GoogleMapUrl);
+        driver.Navigate().GoToUrl(url);
     }
 
     public void SearchLocation(string location)
     {
         searchInput.SendKeys(location);
         searchButton.Click();
+    }
+
+    public string GenerateGoogleMapLinkByCoordinates(string latitude, string longitude)
+    {
+        string googleMapLink = "https://www.google.com/maps/search/?api=1&query=";
+        return $"{googleMapLink}{latitude}%2C{longitude}";
+
     }
 }

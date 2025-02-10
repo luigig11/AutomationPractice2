@@ -17,7 +17,6 @@ namespace AutomationPractice2.PageObjects;
 public class ZipCodePage
 {
     private IWebDriver driver;
-    private GoogleMapPage googleMapPage;
     private Func<IWebDriver, bool> Func;
 
     public ZipCodePage(IWebDriver driver)
@@ -69,36 +68,32 @@ public class ZipCodePage
         searchButton.Click();
     }
 
-    public void SaveInfo(int numberOfRows)
+    public List<ZipCodeSearchResults> GetZipCodeInfo(int numberOfRows)
     {
         List<IWebElement> rows = GetNthElementsFromZipTable(numberOfRows);
+        List<ZipCodeSearchResults> zipCodeSearchResultsList = new List<ZipCodeSearchResults>();
         WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
         foreach (var row in rows)
         {
             try
             {
                 ZipCodeSearchResults zipCodeSearchResults = new ZipCodeSearchResults();
-                zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[0].Text; //esta fila corresponde a la primea fila, la de los encabezados. por eso da error
+                zipCodeSearchResults.ZipCode = row.FindElements(By.TagName("td"))[0].Text;
                 zipCodeSearchResults.City = row.FindElements(By.TagName("td"))[1].Text;
                 zipCodeSearchResults.State = row.FindElements(By.TagName("td"))[2].Text;
                 zipCodeSearchResults.ZipCodeUrl = row.FindElements(By.TagName("td"))[0].FindElement(By.TagName("a")).GetAttribute("href");
                 string coordinates = GetCoordinates(driver, zipCodeSearchResults.ZipCodeUrl);
                 if (string.IsNullOrEmpty(coordinates))
                 {
+                    //zipCodeSearchResultsList.Add(zipCodeSearchResults); do not add to the list if coordinates are empty
                     continue;
                 }
-
-                var newWindow = driver.SwitchTo().NewWindow(WindowType.Tab);
-                ReadOnlyCollection<string> windowHandles = driver.WindowHandles;
-                string mainTab = windowHandles.First();
-                googleMapPage = new GoogleMapPage(newWindow);
-                googleMapPage.GoToGoogleMapPage();
-                wait.Until(x => googleMapPage.sceneDiv.Displayed == true);
-                googleMapPage.SearchLocation(coordinates);
-                wait.Until(x => googleMapPage.coodrinatesHeader.Displayed == true);
-                Utilities.TakeFullScreenShot(driver, $"{zipCodeSearchResults.City}-{zipCodeSearchResults.State}-{zipCodeSearchResults.ZipCode}.jpg");
-                newWindow.Close();
-                driver.SwitchTo().Window(mainTab);
+                string[] results = coordinates.Split(",");
+                string latitude = results[0];
+                string longitude = results[1].Trim();
+                zipCodeSearchResults.Latitude = latitude;
+                zipCodeSearchResults.Longitude = longitude;
+                zipCodeSearchResultsList.Add(zipCodeSearchResults);
             }
             catch (Exception)
             {
@@ -106,6 +101,7 @@ public class ZipCodePage
             }
 
         }
+        return zipCodeSearchResultsList;
     }
 
     private string GetCoordinates(IWebDriver driver, string url)
