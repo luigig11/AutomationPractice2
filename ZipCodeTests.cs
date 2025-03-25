@@ -1,13 +1,12 @@
-using AutomationPractice2;
 using AutomationPractice2.PageObjects;
 using AutomationPractice2.PageObjects.Models;
 using AutomationPractice2.TestUtilities;
-using OpenQA.Selenium.Interactions.Internal;
-using OpenQA.Selenium;
+//using OpenQA.Selenium.Interactions.Internal;
+//using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
-using System.Collections.ObjectModel;
+//using System.Collections.ObjectModel;
 
-namespace NunitSeleniumTemplate;
+namespace AutomationPractice2;
 
 [TestFixture]
 public class ZipCodeTests : BaseTestClass
