@@ -42,6 +42,11 @@ public class BellatrixEcommerceTests : BaseTestClass
         mainPage.AddRocketToShoppingCart(rocket);
         mainPage.OpenCart(rocket);
 
+        if (quantity != "1")
+        {
+            cartPage.SetQuantity(quantity, productSubtotal);
+        }
+
         CartPageValidations(
             new Dictionary<string, string>()
             {
@@ -57,11 +62,12 @@ public class BellatrixEcommerceTests : BaseTestClass
         cartPage.GoToCheckout();
 
         wait.Until(x => checkOutPage.H1_Title.Displayed == true);
+        
         CheckoutPageValidations(
             new Dictionary<string, string>()
             {
                 { "RocketName", rocketName },
-                { "Price", price },
+                { "ProductSubtotal", productSubtotal },
                 { "Quantity", quantity },
                 { "CartSubtotal", cartSubtotal },
                 { "VAT", vat },
@@ -77,7 +83,7 @@ public class BellatrixEcommerceTests : BaseTestClass
             new Dictionary<string, string>()
             {
                 { "RocketName", rocketName },
-                { "Price", price },
+                { "ProductSubtotal", productSubtotal },
                 { "Quantity", quantity },
                 { "CartSubtotal", cartSubtotal },
                 { "VAT", vat },
@@ -105,7 +111,7 @@ public class BellatrixEcommerceTests : BaseTestClass
     private void CheckoutPageValidations(Dictionary<string, string> validations)
     {
         checkOutPage.Product.Text.Replace(" ", "").Should().Contain($"{validations["RocketName"]}×{validations["Quantity"]}".Replace(" ", ""));
-        checkOutPage.Price.Text.Should().Contain(validations["Price"]);
+        checkOutPage.Price.Text.Should().Contain(validations["ProductSubtotal"]);
         checkOutPage.CartSubtotal.Text.Should().Contain(validations["CartSubtotal"]);
         checkOutPage.Tax.Text.Should().Contain(validations["VAT"]);
         checkOutPage.Total.Text.Should().Contain(validations["Total"]);
@@ -120,7 +126,7 @@ public class BellatrixEcommerceTests : BaseTestClass
         //orderReceivedPage.OrderDate.Text.Should().Be(date);
         orderReceivedPage.PaymentMethod.Text.Should().Be($"{validations["PaymentMethod"]}");
         orderReceivedPage.Product.Text.Replace(" ", "").Should().Contain($"{validations["RocketName"]} × {validations["Quantity"]}".Replace(" ", ""));
-        orderReceivedPage.Price.Text.Should().Contain(validations["Price"]);
+        orderReceivedPage.Price.Text.Should().Contain(validations["ProductSubtotal"]);
         orderReceivedPage.ProductSubtotal.Text.Should().Contain(validations["CartSubtotal"]);
         //orderReceivedPage.VAT.Text.Should().Contain(validations["VAT"]); BUG
         orderReceivedPage.PaymentMethod_2.Text.Should().Contain(validations["PaymentMethod"]);

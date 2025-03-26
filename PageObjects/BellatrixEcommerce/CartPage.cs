@@ -29,10 +29,20 @@ public class CartPage
     public IWebElement VAT => _driver.FindElement(By.XPath("//td[@data-title='VAT']"));
     public IWebElement Total => _driver.FindElement(By.XPath("//td[@data-title='Total']"));
     public IWebElement ProceedToCheckoutButton => _driver.FindElement(By.XPath("//a[contains(.,'Proceed to checkout')]"));
+    public IWebElement CartUpdatedAlert => _driver.FindElement(By.XPath("//div[contains(.,'Cart updated')]"));
 
     public void GoToCheckout()
     {
         ProceedToCheckoutButton.Click();
+    }
+
+    public void SetQuantity(string quantity, string productSubtotal)
+    {
+        Quantity.Clear();
+        Quantity.SendKeys(quantity);
+        Quantity.SendKeys(Keys.Enter);
+        _wait.Until(x => ProductSubtotal.Text.Contains(productSubtotal) == true);
+        //_wait.Until(x => CartUpdatedAlert.Displayed == true);
     }
     #endregion
 }
