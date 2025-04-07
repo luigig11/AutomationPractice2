@@ -14,6 +14,7 @@ using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
 using WebDriverManager.Helpers;
 using Proxy = Titanium.Web.Proxy.Http;
+using AutomationPractice2.TestUtilities;
 
 namespace AutomationPractice2;
 
@@ -21,15 +22,14 @@ public class BaseTestClass
 {
     protected IWebDriver driver;
     protected WebDriverWait wait;
-    protected ProxyServer _proxyServer;
-    protected readonly IDictionary<int, Proxy.Request> _requestsHistory = new ConcurrentDictionary<int, Proxy.Request>();
-    protected readonly IDictionary<int, Proxy.Response> _responsesHistory = new ConcurrentDictionary<int, Proxy.Response>();
+    protected ProxyService _proxyService;
 
     [OneTimeSetUp]
     public void ClassInit()
     {
         new DriverManager().SetUpDriver(new ChromeConfig(), VersionResolveStrategy.MatchingBrowser);
-        StartProxyServer();
+        _proxyService = new ProxyService();
+        _proxyService.Start();
     }
 
     [SetUp]
@@ -38,9 +38,9 @@ public class BaseTestClass
         //new DriverManager().SetUpDriver(new ChromeConfig(), VersionResolveStrategy.MatchingBrowser);
         var proxy = new OpenQA.Selenium.Proxy
         {
-            HttpProxy = "http://localhost:18882",
-            SslProxy = "http://localhost:18882",
-            FtpProxy = "http://localhost:18882"
+            HttpProxy = $"http://localhost:{_proxyService.Port}",
+            SslProxy = $"http://localhost:{_proxyService.Port}",
+            FtpProxy = $"http://localhost:{_proxyService.Port}"
         };
         var options = new ChromeOptions();
         options.AddArgument(@"user-data-sir=C:\Users\PERSONAL\AppData\Local\Google\Chrome\User Data\Default");
@@ -54,49 +54,14 @@ public class BaseTestClass
     public void TearDown()
     {
         driver.Close();
-        _requestsHistory.Clear();
-        _responsesHistory.Clear();
+        _proxyService.RequestsHistory.Clear();
+        _proxyService.ResponsesHistory.Clear();
     }
 
     [OneTimeTearDown]
     public void OneTimeTearDown()
     {
-        _proxyServer.Stop();
-        _proxyServer.Dispose();
+        _proxyService.Dispose();
         driver.Quit();
-    }
-
-    private void StartProxyServer()
-    {
-        _proxyServer = new ProxyServer();
-        var explicitEndpoint = new ExplicitProxyEndPoint(System.Net.IPAddress.Any, 18882, true);
-        _proxyServer.AddEndPoint(explicitEndpoint);
-        _proxyServer.Start();
-        _proxyServer.SetAsSystemHttpProxy(explicitEndpoint);
-        _proxyServer.SetAsSystemHttpsProxy(explicitEndpoint);
-        _proxyServer.BeforeRequest += OnRequestCaptureTrafficEventHandler;
-        _proxyServer.BeforeResponse += OnResponseCaptureTrafficEventHandler;
-    }
-
-    private async Task OnRequestCaptureTrafficEventHandler(object sender, SessionEventArgs e)
-    {
-        await Task.Run(() =>
-        {
-            if (!_requestsHistory.ContainsKey(e.HttpClient.Request.GetHashCode()) && e.HttpClient != null && e.HttpClient.Request != null)
-            {
-                _requestsHistory.Add(e.HttpClient.Request.GetHashCode(), e.HttpClient.Request);
-            }
-        });
-    }
-
-    private async Task OnResponseCaptureTrafficEventHandler(object sender, SessionEventArgs e)
-    {
-        await Task.Run(() =>
-        {
-            if (!_responsesHistory.ContainsKey(e.HttpClient.Response.GetHashCode()) && e.HttpClient != null && e.HttpClient.Response != null)
-            {
-                _responsesHistory.Add(e.HttpClient.Response.GetHashCode(), e.HttpClient.Response);
-            }
-        });
     }
 }

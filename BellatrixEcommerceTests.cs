@@ -143,7 +143,7 @@ public class BellatrixEcommerceTests : BaseTestClass
 
     private void AssertNoLargeImagesRequested()
     {
-        bool areThereLargeImages = _requestsHistory.Values.Any(r => r.ContentType != null && r.ContentType.StartsWith("image") && r.ContentLength < 40000);
+        bool areThereLargeImages = _proxyService.RequestsHistory.Values.Any(r => r.Request.ContentType != null && r.Request.ContentType.StartsWith("image") && r.Request.ContentLength < 40000);
         areThereLargeImages.Should().BeFalse();
     }
 }
