@@ -97,6 +97,14 @@ public class BellatrixEcommerceTests : BaseTestClass
         //driver.FindElements(By.XPath("//span[contains(.,'Your Bellatrix Demos order has been received!')]")).Should().NotBeEmpty();
     }
 
+    [Test]
+    public void TestNoLargeImages_When_NavigateToHomePage()
+    {
+        driver.Navigate().GoToUrl("https://automatetheplanet.com/");
+
+        AssertNoLargeImagesRequested();
+    }
+
     private void CartPageValidations(Dictionary<string, string> validations)
     {
         cartPage.Product.Text.Should().Be(validations["RocketName"]);
@@ -131,5 +139,11 @@ public class BellatrixEcommerceTests : BaseTestClass
         //orderReceivedPage.VAT.Text.Should().Contain(validations["VAT"]); BUG
         orderReceivedPage.PaymentMethod_2.Text.Should().Contain(validations["PaymentMethod"]);
         //orderReceivedPage.Total.Text.Should().Contain(validations["Total"]); BUG
+    }
+
+    private void AssertNoLargeImagesRequested()
+    {
+        bool areThereLargeImages = _requestsHistory.Values.Any(r => r.ContentType != null && r.ContentType.StartsWith("image") && r.ContentLength < 40000);
+        areThereLargeImages.Should().BeFalse();
     }
 }
